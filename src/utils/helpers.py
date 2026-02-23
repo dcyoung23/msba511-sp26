@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import cosine
+from scipy.stats import entropy
 import pandas as pd
 
 def calc_corr_sim(x, y):
@@ -59,3 +60,29 @@ def create_long_data(data, dtypes):
     long_data.columns = list(dtypes.keys())
     long_data = long_data.astype(dtypes)
     return long_data
+
+
+def gini_index(x):
+    unique_labels, counts = np.unique(x, return_counts=True)
+    probabilities = counts / len(x)
+    gini = 1 - np.sum(probabilities**2)
+    return (counts, gini)
+
+
+def entropy_loss(x):
+    unique_labels, counts = np.unique(x, return_counts=True)
+    probabilities = counts / len(x)
+    entropy_loss = entropy(probabilities, base=2)
+    return (counts, entropy_loss)
+
+
+def weighted_impurity(cond_t, cond_f, samples, criteria):
+    if criteria == 'gini':
+        imp_t = gini_index(cond_t)
+        imp_f = gini_index(cond_f)
+    elif criteria == 'entropy':
+        imp_t = entropy_loss(cond_t)
+        imp_f = entropy_loss(cond_f)
+    w_imp_t = sum(imp_t[0]) / len(samples) * imp_t[1]
+    w_imp_f = sum(imp_f[0]) / len(samples) * imp_f[1]
+    return w_imp_t + w_imp_f

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 import matplotlib.cm as cm
 from pandas.plotting import parallel_coordinates
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, ConfusionMatrixDisplay
 from sklearn.decomposition import PCA
 
 
@@ -58,3 +58,11 @@ def visualize_clusters_pca(params, data):
     plt.scatter(pc1, pc2, c=cluster_assignments.tolist(), cmap=cmap)
     plt.xlabel('PC1')
     plt.ylabel('PC2')
+
+
+def plot_confusion_matrix(clf, X, y, ax, title):
+    ConfusionMatrixDisplay.from_estimator(clf, X, y, cmap=plt.cm.Blues, colorbar=False, ax=ax)
+    plt.title(title)
+    plt.tight_layout()
+
+

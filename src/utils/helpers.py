@@ -2,6 +2,7 @@ import numpy as np
 from scipy.spatial.distance import cosine
 from scipy.stats import entropy
 import pandas as pd
+from sklearn.metrics import accuracy_score, precision_score, recall_score, fbeta_score
 
 def calc_corr_sim(x, y):
     # Calculate mean for all values in x
@@ -86,3 +87,16 @@ def weighted_impurity(cond_t, cond_f, samples, criteria):
     w_imp_t = sum(imp_t[0]) / len(samples) * imp_t[1]
     w_imp_f = sum(imp_f[0]) / len(samples) * imp_f[1]
     return w_imp_t + w_imp_f
+
+
+def evaluate_model(y_actual, y_pred, desc):
+    metrics = {}
+    metrics['Accuracy'] = accuracy_score(y_actual, y_pred)
+    metrics['Precision'] = precision_score(y_actual, y_pred)
+    metrics['Recall'] = recall_score(y_actual, y_pred)
+    metrics['F1'] = fbeta_score(y_actual, y_pred, beta=1)
+    
+    print(desc)
+    for k, v in metrics.items():
+        print(f"{k}: {v:.4f}")
+    return metrics

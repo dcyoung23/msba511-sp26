@@ -89,14 +89,63 @@ def weighted_impurity(cond_t, cond_f, samples, criteria):
     return w_imp_t + w_imp_f
 
 
-def evaluate_model(y_actual, y_pred, desc):
+def evaluate_model(y_actual, y_pred, beta=None, model_name=None):
     metrics = {}
     metrics['Accuracy'] = accuracy_score(y_actual, y_pred)
     metrics['Precision'] = precision_score(y_actual, y_pred)
     metrics['Recall'] = recall_score(y_actual, y_pred)
     metrics['F1'] = fbeta_score(y_actual, y_pred, beta=1)
+    if beta:
+        metrics[f'F{beta}'] = fbeta_score(y_actual, y_pred, beta=beta)
+    # if title:
+    #     print(title)
+    # for k, v in metrics.items():
+    #     print(f"{k}: {v:.4f}")
+    return pd.DataFrame([metrics], index=[model_name])
+
+
+def build_manual_ensemble_results(models_dict, X_test, y_test, thresh=0.5):
+    result = pd.DataFrame({'actual': y_test}).reset_index(drop=True)
     
-    print(desc)
-    for k, v in metrics.items():
-        print(f"{k}: {v:.4f}")
-    return metrics
+    pred_cols = []
+    prob_cols = []
+    
+    for model_id, model in models_dict.items():
+        pred_col = f"{model_id}_pred"
+        result[pred_col] = model.predict(X_test)
+        pred_cols.append(pred_col)
+        
+        if hasattr(model, "predict_proba"):
+            prob_col = f"{model_id}_prob"
+            result[prob_col] = model.predict_proba(X_test)[:, 1]
+            prob_cols.append(prob_col)
+        else:
+            pass    
+    # Majority vote (hard voting)
+    result['majority'] = (result[pred_cols].mean(axis=1) > 0.5).astype(int)
+    
+    # Average probability (soft voting)
+    if prob_cols:
+        result['average_prob'] = result[prob_cols].mean(axis=1)
+        result['average_pred'] = (result['average_prob'] > thresh).astype(int)
+    
+    return (pred_cols, prob_cols, result)
+
+
+def evaluate_manual_ensemble_models(result_df, model_map):    
+    summary_rows = []
+    
+    for model_name, pred_col in model_map.items():
+        y_true = result_df['actual']
+        y_pred = result_df[pred_col]
+        
+        summary_rows.append({
+            'Model': model_name,
+            'Accuracy': accuracy_score(y_true, y_pred),
+            'Precision': precision_score(y_true, y_pred, zero_division=0),
+            'Recall': recall_score(y_true, y_pred, zero_division=0),
+            'F1': fbeta_score(y_true, y_pred, beta=1, zero_division=0),
+            'F2': fbeta_score(y_true, y_pred, beta=2, zero_division=0)
+        })
+    
+    return pd.DataFrame(summary_rows)

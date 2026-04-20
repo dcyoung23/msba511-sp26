@@ -154,3 +154,57 @@ def plot_metric_by_threshold_cv(
     return results_df
 
 
+def plot_ranked_uplift(data, uplift_col, uplift_cutoff, ax):
+    # Flag rows above cutoff
+    selected_mask = data[uplift_col] >= uplift_cutoff
+    n_selected = selected_mask.sum()
+
+    # Set cutoff index
+    if n_selected > 0:
+        cutoff_index = n_selected - 1
+    else:
+        cutoff_index = None
+
+    # Plot data
+    ax.plot(data.index, data[uplift_col], linewidth=2, label='Estimated Uplift')
+    
+    # Horizontal cutoff line
+    plt.axhline(
+        y=uplift_cutoff,
+        linestyle='--',
+        linewidth=1.5,
+        label=f'Uplift Cutoff = {uplift_cutoff:.2f}'
+    )
+    
+    # Vertical line where uplift crosses cutoff
+    if cutoff_index is not None:
+        plt.axvline(
+            x=cutoff_index,
+            linestyle='--',
+            linewidth=1.5,
+            label=f'Selected Customers = {n_selected:,}'
+        )
+    
+    # Optional zero reference line
+    plt.axhline(
+        y=0,
+        linestyle=':',
+        linewidth=1
+    )
+    
+    if cutoff_index is not None:
+        plt.fill_between(
+            data.index,
+            data[uplift_col],
+            uplift_cutoff,
+            where=data[uplift_col] >= uplift_cutoff,
+            alpha=0.15
+        )
+    
+    plt.title('Ranked Uplift with Selection Cutoff')
+    plt.xlabel('Customers Ranked by Estimated Uplift')
+    plt.ylabel('Uplift')
+    plt.legend()
+    plt.grid(True, alpha=0.25)
+    plt.tight_layout()
+
